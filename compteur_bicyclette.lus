@@ -1,0 +1,111 @@
+node vitesse_instant(miliseconde : bool; tour :bool; circonference : int) returns (v:int);
+var time : int;
+let
+	time = if miliseconde then 0 -> pre(time)+1 else 0;
+	v = (2*circonference/1000)/(time/3600000);
+tel
+
+node vitesse_moy (vi1 : int; vi2 : int) returns (vm : int)
+let
+	vm = (vi1+vi2)/2;
+tel
+
+node avance_retard(vi : int; vm : int) returns (a : bool; r : bool ; h : bool)
+let
+	a = (vi > (vm+1));
+	r = (vi < (vm-1));
+	h = not(a or r);
+tel
+
+node heure(heur0, minute0: int; set: bool; mili: bool) returns (heure, minute: int);
+	var seconde : int; h0, m0 : int;
+let	
+	h0 = if set then 0 
+		else heur0;
+	m0 = if set then 0 
+		else minute0;
+
+	seconde = 0 -> if (pre(seconde)=59) then 0
+			else pre(seconde)+1;
+	
+	minute = m0 -> if pre(seconde) = 59 then 
+				(if pre(minute) = 59 then 0
+				else pre(minute)+1)
+			else pre(minute);
+
+	heure = h0 -> if pre(minute)=59 and pre(seconde)=59 then
+				if pre(heure) = 23 then 0
+				else pre(heure)+1
+			else pre(heure);
+tel
+
+node compteur (raz: bool) returns(c:int);
+let
+	c = 0 -> if raz then 0
+		 else (pre(c)+1);
+tel
+
+node affichage_sequentiel(bouton: bool; vit_moy, dist_parcourue,
+ dist_totale: int; heure, minute: int) returns (affichage: int; h, vit, dist, tot:bool);
+var index, v : int;
+let
+	v = compteur(false);
+	index = if v < 4 and bouton then v else compteur(true);
+
+	tot = if index = 0 then true 
+		else false;
+	vit = if index = 1 then true 
+		else false;
+	dist = if index = 2 then true 
+		else false;
+	h = if index = 3 then true 
+		else false;
+	
+	affichage = 0 -> if index = 0 then dist_totale
+		else if index = 1 then vit_moy 
+		else if index = 2 then dist_parcourue
+		else if index = 3 then heure
+		else pre(affichage);
+			
+tel
+
+
+node raz(mili, b1, b2: bool) returns (ok: bool)
+	var time: int;
+let
+	time = 0-> if mili then pre(time)+1
+			else 0;
+	ok = if (time = 1000) and b1 and b2 then true 
+		else false;
+tel
+
+
+node controleur(miliseconde, tour, bouton1, bouton2: bool; circonference: int) returns (vitesse_instantannee, affichage_bas: int; dist, moy, h, total: bool; en_avance, en_retard, a_lheure:bool);
+	var vitesse_moy, dist_tot,dist_parcourue, heure, minute: int;raz: bool;
+let
+	raz = raz(miliseconde, bouton1, bouton2);
+	dist_parcourue = 0 -> if ( raz = false) and tour then (pre(dist_parcourue) + circonference)/100 else 0;
+
+	dist_tot = 0 -> (pre(dist_tot) + circonference)/100;	
+
+	vitesse_instantannee = if (raz = false) then vitesse_instant(miliseconde, tour, circonference ) else 0;
+
+	vitesse_moy = vitesse_moy (pre(vitesse_instantannee), vitesse_instantannee);
+
+	heure, minute = (0,0) -> heure(pre(heure), pre(minute), raz, miliseconde);
+
+	affichage_bas, h, moy, dist,total = affichage_sequentiel(bouton2, vitesse_moy, dist_parcourue, dist_tot, heure, minute);
+
+	en_avance, en_retard, a_lheure = avance_retard(vitesse_instantannee, vitesse_moy);
+	
+tel
+
+
+
+
+
+
+
+
+
+
